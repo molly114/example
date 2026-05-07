@@ -117,12 +117,6 @@
     margin-bottom: 10px;
     letter-spacing: -0.01em;
   }
-  .section-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
 
   .summary {
     background: var(--surface-2);
@@ -164,45 +158,6 @@
     color: var(--warning);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-  }
-
-  .cycle-toggle {
-    display: inline-flex;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 3px;
-    font-size: 12px;
-  }
-  .cycle-btn {
-    border: none;
-    background: transparent;
-    padding: 6px 14px;
-    border-radius: 999px;
-    cursor: pointer;
-    color: var(--text-2);
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: inherit;
-    transition: all 0.18s ease;
-    letter-spacing: -0.01em;
-  }
-  .cycle-btn:hover:not(.is-active) { color: var(--text); }
-  .cycle-btn.is-active {
-    background: var(--surface);
-    color: var(--text);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  }
-  .cycle-save {
-    font-size: 10px;
-    background: var(--success-soft);
-    color: var(--success);
-    padding: 2px 7px;
-    border-radius: 999px;
-    font-weight: 600;
-    letter-spacing: 0;
   }
 
   .plans {
@@ -259,7 +214,6 @@
     font-style: italic;
     letter-spacing: -0.01em;
   }
-  .plan-price-row { display: flex; align-items: baseline; gap: 2px; }
   .plan-price {
     font-size: 17px;
     font-weight: 700;
@@ -272,23 +226,6 @@
     color: var(--text-2);
     font-weight: 400;
     margin-left: 1px;
-  }
-  .plan-price-context {
-    font-size: 10.5px;
-    color: var(--text-2);
-    margin-top: 2px;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
-  }
-  .plan-savings {
-    display: inline-block;
-    margin-top: 4px;
-    font-size: 10px;
-    background: var(--success-soft);
-    color: var(--success);
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-weight: 600;
   }
   .plan-divider {
     height: 1px;
@@ -352,6 +289,11 @@
     font-weight: 600;
   }
 
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
   .form-field-label {
     font-size: 11px;
     color: var(--text-2);
@@ -394,10 +336,6 @@
     padding-top: 8px;
     border-top: 1px dashed rgba(83, 74, 183, 0.2);
   }
-  .price-row.savings {
-    color: var(--success);
-    font-weight: 500;
-  }
   .price-row.total {
     font-size: 14px;
     font-weight: 600;
@@ -418,15 +356,6 @@
     opacity: 0.7;
     margin-left: 4px;
   }
-  .commit-note {
-    font-size: 10.5px;
-    color: var(--text-3);
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed rgba(83, 74, 183, 0.2);
-    display: none;
-  }
-  .commit-note.is-visible { display: block; }
 
   .lap-footer {
     padding: 16px 24px;
@@ -486,9 +415,9 @@
   @media (max-width: 480px) {
     .plans { grid-template-columns: 1fr; }
     .summary { grid-template-columns: 1fr; gap: 8px; }
+    .form-grid { grid-template-columns: 1fr; }
     .lap-header, .lap-footer { padding-left: 18px; padding-right: 18px; }
     .lap-body { padding-left: 18px; padding-right: 18px; }
-    .section-head { flex-direction: column; align-items: flex-start; gap: 8px; }
   }
 </style>
 </head>
@@ -513,7 +442,7 @@
         <div class="summary">
           <div>
             <div class="summary-item-label">현재 플랜</div>
-            <div class="summary-item-value">Basic · 월간 · 40 GB</div>
+            <div class="summary-item-value">Basic · 40 GB</div>
           </div>
           <div>
             <div class="summary-item-label">영상 HDD 사용량</div>
@@ -531,27 +460,13 @@
       </div>
 
       <div class="section">
-        <div class="section-head">
-          <h3 class="section-title">변경할 플랜 선택</h3>
-          <div class="cycle-toggle" role="tablist" aria-label="결제 주기">
-            <button class="cycle-btn is-active" data-cycle="monthly" onclick="setCycle('monthly')" role="tab">월간 결제</button>
-            <button class="cycle-btn" data-cycle="yearly" onclick="setCycle('yearly')" role="tab">
-              연간 결제
-              <span class="cycle-save">2개월 무료</span>
-            </button>
-          </div>
-        </div>
-
+        <h3 class="section-title">변경할 플랜 선택</h3>
         <div class="plans" id="plans">
 
-          <div class="plan is-current" data-plan="Basic" data-monthly="110000" data-yearly="1100000">
+          <div class="plan is-current" data-plan="Basic" data-price="110000" data-storage="40">
             <span class="plan-badge is-current">현재 사용 중</span>
             <div class="plan-name">Basic</div>
-            <div class="plan-price-row">
-              <span class="plan-price" data-price-target>₩110,000</span>
-              <span class="plan-price-unit">/월</span>
-            </div>
-            <div class="plan-price-context" data-context style="display:none"></div>
+            <div class="plan-price">₩110,000<span class="plan-price-unit">/월</span></div>
             <div class="plan-divider"></div>
             <div class="plan-spec">
               <span class="plan-spec-label">영상 HDD</span>
@@ -570,14 +485,10 @@
             </div>
           </div>
 
-          <div class="plan is-selected" data-plan="Standard" data-monthly="165000" data-yearly="1650000" onclick="selectPlan(this)">
+          <div class="plan is-selected" data-plan="Standard" data-price="165000" data-storage="80" onclick="selectPlan(this)">
             <span class="plan-badge is-recommend">추천</span>
             <div class="plan-name">Standard</div>
-            <div class="plan-price-row">
-              <span class="plan-price" data-price-target>₩165,000</span>
-              <span class="plan-price-unit">/월</span>
-            </div>
-            <div class="plan-price-context" data-context style="display:none"></div>
+            <div class="plan-price">₩165,000<span class="plan-price-unit">/월</span></div>
             <div class="plan-divider"></div>
             <div class="plan-spec">
               <span class="plan-spec-label">영상 HDD</span>
@@ -596,13 +507,9 @@
             </div>
           </div>
 
-          <div class="plan" data-plan="Premium" data-monthly="242000" data-yearly="2420000" onclick="selectPlan(this)">
+          <div class="plan" data-plan="Premium" data-price="242000" data-storage="120" onclick="selectPlan(this)">
             <div class="plan-name" style="margin-top: 18px;">Premium</div>
-            <div class="plan-price-row">
-              <span class="plan-price" data-price-target>₩242,000</span>
-              <span class="plan-price-unit">/월</span>
-            </div>
-            <div class="plan-price-context" data-context style="display:none"></div>
+            <div class="plan-price">₩242,000<span class="plan-price-unit">/월</span></div>
             <div class="plan-divider"></div>
             <div class="plan-spec">
               <span class="plan-spec-label">영상 HDD</span>
@@ -621,14 +528,10 @@
             </div>
           </div>
 
-          <div class="plan" data-plan="Ultra" data-monthly="550000" data-yearly="5500000" onclick="selectPlan(this)">
+          <div class="plan" data-plan="Ultra" data-price="550000" data-storage="160" onclick="selectPlan(this)">
             <span class="plan-badge is-top">최상위</span>
             <div class="plan-name">Ultra</div>
-            <div class="plan-price-row">
-              <span class="plan-price" data-price-target>₩550,000</span>
-              <span class="plan-price-unit">/월</span>
-            </div>
-            <div class="plan-price-context" data-context style="display:none"></div>
+            <div class="plan-price">₩550,000<span class="plan-price-unit">/월</span></div>
             <div class="plan-divider"></div>
             <div class="plan-spec">
               <span class="plan-spec-label">영상 HDD</span>
@@ -657,14 +560,25 @@
 
       <div class="section">
         <h3 class="section-title">결제 정보</h3>
-        <div class="form-field-label">결제 수단</div>
-        <button class="select">
-          <span class="select-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-            신한카드 ****1234
-          </span>
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
+        <div class="form-grid">
+          <div>
+            <div class="form-field-label">결제 수단</div>
+            <button class="select">
+              <span class="select-content">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                신한카드 ****1234
+              </span>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+          <div>
+            <div class="form-field-label">변경 적용 시점</div>
+            <button class="select" id="timing-select" onclick="toggleTiming()">
+              <span class="select-content" id="timing-label">즉시 적용 (일할 계산)</span>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="section">
@@ -673,16 +587,9 @@
             <span id="diff-label">Basic → Standard 차액 (잔여 28일 기준)</span>
             <span class="price-amount" id="diff-amount">+₩51,333</span>
           </div>
-          <div class="price-row savings" id="savings-row" style="display:none">
-            <span id="savings-label">2개월 무료 적용</span>
-            <span class="price-amount" id="savings-amount">−₩330,000</span>
-          </div>
           <div class="price-row total">
             <span>오늘 결제 금액 <span class="vat-mini">VAT 포함</span></span>
             <span class="price-amount" id="total-amount">₩51,333</span>
-          </div>
-          <div class="commit-note" id="commit-note">
-            연간 결제는 1년 단위로 자동 갱신되며, 중도 해지 시 잔여 개월 환불 정책이 적용됩니다.
           </div>
         </div>
       </div>
@@ -701,90 +608,45 @@
 </div>
 
 <script>
-  // ===== Constants (조정 포인트) =====
-  // ANNUAL_MULTIPLIER: 연 단위 결제 시 곱하는 개월 수. 10 = 2개월 무료
-  const ANNUAL_MULTIPLIER = 10;
-  const FULL_YEAR_MONTHS = 12;
-  const CURRENT_PLAN_PRICE_MONTHLY = 110000;
+  const CURRENT_PLAN_PRICE = 110000;
   const CURRENT_PLAN_NAME = 'Basic';
   const REMAINING_DAYS = 28;
   const TOTAL_DAYS = 30;
-
-  // ===== State =====
-  let cycleMode = 'monthly';   // 'monthly' | 'yearly'
   let selectedPlanEl = document.querySelector('.plan.is-selected');
+  let timingMode = 'now';
 
-  // ===== Cycle toggle =====
-  function setCycle(cycle) {
-    cycleMode = cycle;
-    document.querySelectorAll('.cycle-btn').forEach(b => {
-      b.classList.toggle('is-active', b.dataset.cycle === cycle);
-    });
-    refreshPlanCards();
-    updatePriceSummary();
-    document.getElementById('commit-note').classList.toggle('is-visible', cycle === 'yearly');
-  }
-
-  // ===== Plan card price refresh =====
-  function refreshPlanCards() {
-    document.querySelectorAll('.plan').forEach(plan => {
-      const monthly = parseInt(plan.dataset.monthly);
-      const yearly = parseInt(plan.dataset.yearly);
-      const priceEl = plan.querySelector('[data-price-target]');
-      const unitEl = plan.querySelector('.plan-price-unit');
-      const contextEl = plan.querySelector('[data-context]');
-
-      if (cycleMode === 'monthly') {
-        priceEl.textContent = `₩${monthly.toLocaleString()}`;
-        unitEl.textContent = '/월';
-        contextEl.style.display = 'none';
-      } else {
-        const monthlyEquiv = Math.round(yearly / FULL_YEAR_MONTHS);
-        const savings = (monthly * FULL_YEAR_MONTHS) - yearly;
-        priceEl.textContent = `₩${monthlyEquiv.toLocaleString()}`;
-        unitEl.textContent = '/월';
-        contextEl.style.display = '';
-        contextEl.innerHTML = `연 ₩${yearly.toLocaleString()} 청구<br><span class="plan-savings">₩${savings.toLocaleString()} 절약</span>`;
-      }
-    });
-  }
-
-  // ===== Plan selection =====
   function selectPlan(el) {
-    if (el.classList.contains('is-disabled')) return;
-    if (el.classList.contains('is-current') && cycleMode === 'monthly') return;
+    if (el.classList.contains('is-current') || el.classList.contains('is-disabled')) return;
     document.querySelectorAll('.plan').forEach(p => p.classList.remove('is-selected'));
     el.classList.add('is-selected');
     selectedPlanEl = el;
     updatePriceSummary();
   }
 
-  // ===== Price summary recalculation (즉시 적용 고정) =====
+  function toggleTiming() {
+    timingMode = timingMode === 'now' ? 'next' : 'now';
+    document.getElementById('timing-label').textContent =
+      timingMode === 'now' ? '즉시 적용 (일할 계산)' : '다음 결제일부터 적용';
+    updatePriceSummary();
+  }
+
   function updatePriceSummary() {
-    const planMonthly = parseInt(selectedPlanEl.dataset.monthly);
-    const planYearly = parseInt(selectedPlanEl.dataset.yearly);
+    const newPrice = parseInt(selectedPlanEl.dataset.price);
     const newName = selectedPlanEl.dataset.plan;
     const diffLabel = document.getElementById('diff-label');
     const diffAmount = document.getElementById('diff-amount');
     const totalAmount = document.getElementById('total-amount');
-    const savingsRow = document.getElementById('savings-row');
-    const savingsAmount = document.getElementById('savings-amount');
 
-    if (cycleMode === 'monthly') {
-      savingsRow.style.display = 'none';
-      const dailyDiff = (planMonthly - CURRENT_PLAN_PRICE_MONTHLY) / TOTAL_DAYS;
-      const prorated = Math.round(dailyDiff * REMAINING_DAYS);
+    if (timingMode === 'now') {
+      const dailyDiff = (newPrice - CURRENT_PLAN_PRICE) / TOTAL_DAYS;
+      const proratedAmount = Math.round(dailyDiff * REMAINING_DAYS);
       diffLabel.textContent = `${CURRENT_PLAN_NAME} → ${newName} 차액 (잔여 ${REMAINING_DAYS}일 기준)`;
-      diffAmount.textContent = formatWon(prorated, true);
-      totalAmount.textContent = formatWon(prorated);
+      diffAmount.textContent = formatWon(proratedAmount, true);
+      totalAmount.textContent = formatWon(proratedAmount);
     } else {
-      const fullPriceWithoutDiscount = planMonthly * FULL_YEAR_MONTHS;
-      const savings = fullPriceWithoutDiscount - planYearly;
-      savingsRow.style.display = '';
-      savingsAmount.textContent = `−₩${savings.toLocaleString()}`;
-      diffLabel.textContent = `${newName} 연간 결제 (1년치 일시 결제)`;
-      diffAmount.textContent = `₩${planYearly.toLocaleString()}`;
-      totalAmount.textContent = `₩${planYearly.toLocaleString()}`;
+      diffLabel.textContent = `다음 결제일부터 ${newName} 요금 적용`;
+      diffAmount.textContent = `₩${newPrice.toLocaleString()}/월`;
+      totalAmount.textContent = '₩0';
     }
   }
 
@@ -794,7 +656,6 @@
     return `${sign}₩${Math.abs(amount).toLocaleString()}`;
   }
 
-  // ===== Actions =====
   function closeLap() {
     const backdrop = document.getElementById('backdrop');
     backdrop.style.transition = 'opacity 0.18s';
@@ -804,14 +665,7 @@
 
   function confirmChange() {
     const planName = selectedPlanEl.dataset.plan;
-    const cycleLabel = cycleMode === 'monthly' ? '월간' : '연간';
-    const totalText = document.getElementById('total-amount').textContent;
-    const message = `${planName} ${cycleLabel} 플랜으로 변경되며 ${totalText}이 즉시 결제됩니다.\n진행하시겠습니까?`;
-    if (confirm(message)) {
-      // PG 연동 자리
-      alert(`결제가 완료되었습니다.\n${planName} ${cycleLabel} 플랜이 적용되었습니다.`);
-      closeLap();
-    }
+    alert(`${planName} 플랜 변경 결제가 진행됩니다. (실제 구현 시 PG 연동)`);
   }
 
   document.getElementById('backdrop').addEventListener('click', e => {
