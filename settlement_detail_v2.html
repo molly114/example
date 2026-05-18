@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>정산관리 상세 - 오픈노하우 (개선판)</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px; color: #1f2937; background: #f3f4f6; line-height: 1.5;
+  }
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 180px; background: #fff; border-right: 1px solid #e5e7eb;
+    padding: 16px 0; flex-shrink: 0;
+  }
+  .logo {
+    padding: 0 20px 16px; border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 12px; font-weight: 700; color: #111827;
+  }
+  .menu { list-style: none; }
+  .menu li { padding: 8px 20px; color: #4b5563; cursor: pointer; font-size: 13px; }
+  .menu li.active {
+    background: #eff6ff; color: #2563eb; border-left: 3px solid #2563eb;
+    padding-left: 17px; font-weight: 600;
+  }
+  .menu li.sub { padding-left: 36px; font-size: 12.5px; }
+  .menu li.sub.active { padding-left: 33px; }
+
+  .main { flex: 1; display: flex; min-width: 0; }
+
+  /* List Area */
+  .list-area { flex: 1; padding: 20px 24px; overflow: auto; background: #fff; min-width: 0; }
+  .page-title-row {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  }
+  .page-title { font-size: 18px; font-weight: 700; color: #111827; }
+  .header-meta { color: #6b7280; font-size: 12px; }
+  .header-meta b { color: #111827; }
+
+  .filter-row {
+    display: flex; gap: 8px; margin-bottom: 14px; align-items: center;
+  }
+  .filter-row input, .filter-row select {
+    padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px;
+    font-size: 12.5px; height: 30px; font-family: inherit;
+  }
+  .filter-row .btn {
+    height: 30px; padding: 0 12px; border: 1px solid #d1d5db;
+    background: #fff; border-radius: 4px; cursor: pointer;
+    font-size: 12.5px; font-family: inherit;
+  }
+  .filter-row .btn.primary { background: #2563eb; color: white; border-color: #2563eb; }
+
+  .list-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .list-table thead th {
+    background: #f9fafb; padding: 10px 8px;
+    border-top: 2px solid #374151; border-bottom: 1px solid #e5e7eb;
+    font-weight: 600; text-align: left; color: #374151; white-space: nowrap;
+  }
+  .list-table tbody td {
+    padding: 10px 8px; border-bottom: 1px solid #f3f4f6; color: #1f2937;
+  }
+  .list-table tbody tr { cursor: pointer; }
+  .list-table tbody tr:hover { background: #f9fafb; }
+  .list-table tbody tr.selected {
+    background: #eff6ff; border-left: 3px solid #2563eb;
+  }
+  .num-right { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Status Badges */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge.aggregating { background: #e0e7ff; color: #3730a3; }   /* 집계중 */
+  .badge.issued     { background: #dbeafe; color: #1e40af; }   /* 정산서 발행 */
+  .badge.appeal     { background: #fed7aa; color: #9a3412; }   /* 이의신청 중 */
+  .badge.confirmed  { background: #fde68a; color: #92400e; }   /* 정산 확정 */
+  .badge.paying     { background: #c7d2fe; color: #3730a3; }   /* 지급 처리 중 */
+  .badge.paid       { background: #d1fae5; color: #065f46; }   /* 지급 완료 */
+  .badge.hold       { background: #fecaca; color: #991b1b; }   /* 보류 */
+
+  /* Detail Panel */
+  .detail-panel {
+    width: 760px; background: #fff; border-left: 1px solid #e5e7eb;
+    overflow-y: auto; flex-shrink: 0; box-shadow: -8px 0 24px rgba(0,0,0,0.04);
+  }
+
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid #e5e7eb;
+    background: #fafafa; position: sticky; top: 0; z-index: 10;
+  }
+  .panel-header-left { display: flex; align-items: center; gap: 10px; }
+  .settle-no { font-size: 15px; font-weight: 700; color: #111827; }
+  .panel-header-actions { display: flex; gap: 6px; }
+  .btn-sm {
+    height: 28px; padding: 0 10px; border: 1px solid #d1d5db;
+    background: #fff; border-radius: 4px; cursor: pointer;
+    font-size: 12px; font-family: inherit; color: #374151;
+  }
+  .btn-sm:hover { background: #f3f4f6; }
+  .btn-sm.primary { background: #2563eb; color: white; border-color: #2563eb; }
+  .btn-sm.primary:hover { background: #1d4ed8; }
+  .btn-sm.warn { background: #f59e0b; color: white; border-color: #f59e0b; }
+  .btn-sm.close { width: 28px; padding: 0; font-size: 16px; line-height: 1; }
+  .btn-sm:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; border-color: #e5e7eb; }
+
+  .section {
+    padding: 18px 20px; border-bottom: 1px solid #f3f4f6;
+  }
+  .section-title {
+    font-size: 14px; font-weight: 700; color: #111827;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; background: #2563eb; color: white;
+    border-radius: 50%; font-size: 11px; font-weight: 700;
+  }
+  .section-subtitle {
+    font-size: 12px; color: #6b7280; margin-left: auto; font-weight: 400;
+  }
+
+  .info-grid {
+    display: grid; grid-template-columns: 120px 1fr 120px 1fr;
+    border-top: 1px solid #e5e7eb; border-left: 1px solid #e5e7eb;
+    font-size: 12.5px;
+  }
+  .info-grid .label {
+    background: #f9fafb; padding: 8px 10px;
+    border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;
+    color: #6b7280; font-weight: 500;
+  }
+  .info-grid .value {
+    padding: 8px 10px; border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb; color: #1f2937;
+  }
+
+  .calc-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .calc-table thead th {
+    background: #f9fafb; padding: 8px 10px; border: 1px solid #e5e7eb;
+    font-weight: 600; color: #374151; text-align: left;
+  }
+  .calc-table tbody td { padding: 8px 10px; border: 1px solid #e5e7eb; }
+  .calc-table tfoot td {
+    padding: 9px 10px; border: 1px solid #e5e7eb;
+    background: #eff6ff; font-weight: 700; color: #1e40af;
+  }
+  .calc-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .calc-table td.minus { color: #dc2626; }
+
+  .highlight-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe; border-radius: 6px;
+    padding: 14px 16px; margin-top: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .highlight-box .h-label { font-size: 13px; color: #1e40af; font-weight: 600; }
+  .highlight-box .h-value {
+    font-size: 20px; font-weight: 800; color: #1e3a8a;
+    font-variant-numeric: tabular-nums;
+  }
+  .highlight-box .h-sub { font-size: 11px; color: #6b7280; margin-left: 6px; }
+
+  details {
+    border: 1px solid #e5e7eb; border-radius: 4px; margin-top: 8px;
+  }
+  details + details { margin-top: 6px; }
+  details summary {
+    cursor: pointer; padding: 10px 12px; background: #f9fafb;
+    font-weight: 600; font-size: 12.5px; color: #374151;
+    list-style: none; display: flex; align-items: center; justify-content: space-between;
+  }
+  details summary::after {
+    content: '▼'; font-size: 10px; color: #9ca3af; transition: transform 0.2s;
+  }
+  details[open] summary::after { transform: rotate(180deg); }
+  details summary::-webkit-details-marker { display: none; }
+  details .details-body { padding: 10px; background: #fff; }
+  .summary-count { color: #6b7280; font-size: 11px; font-weight: 400; margin-left: 6px; }
+
+  .history-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .history-table th, .history-table td {
+    padding: 8px 10px; border: 1px solid #e5e7eb; text-align: left;
+  }
+  .history-table th { background: #f9fafb; font-weight: 600; color: #374151; }
+  .history-table td.center { text-align: center; }
+  .history-status {
+    display: inline-block; padding: 1px 7px; border-radius: 3px;
+    font-size: 11px; font-weight: 600;
+  }
+  .s-init { background: #f3f4f6; color: #374151; }
+  .s-issued { background: #dbeafe; color: #1e40af; }
+  .s-appeal-end { background: #fed7aa; color: #9a3412; }
+  .s-confirmed { background: #fde68a; color: #92400e; }
+  .s-paid { background: #d1fae5; color: #065f46; }
+
+  .memo-area textarea {
+    width: 100%; min-height: 80px; padding: 10px 12px;
+    border: 1px solid #d1d5db; border-radius: 4px;
+    font-family: inherit; font-size: 12.5px; color: #1f2937;
+    resize: vertical; line-height: 1.5;
+  }
+  .memo-area textarea:focus { outline: none; border-color: #2563eb; }
+  .memo-notice { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+  .memo-actions { margin-top: 8px; text-align: right; }
+
+  .info-note {
+    background: #fffbeb; border-left: 3px solid #f59e0b;
+    padding: 8px 12px; font-size: 11.5px; color: #78350f;
+    margin-top: 8px; border-radius: 3px;
+  }
+  .instructor-note {
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    padding: 10px 12px; border-radius: 4px; margin-top: 8px;
+    font-size: 11.5px; color: #14532d;
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  .instructor-note::before { content: 'ⓘ'; font-weight: 700; flex-shrink: 0; }
+
+  /* 이의신청 카드 */
+  .appeal-card {
+    border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px 16px;
+    display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px;
+    font-size: 12.5px; background: #fafafa;
+  }
+  .appeal-card .ac-label { color: #6b7280; font-weight: 500; }
+  .appeal-card .ac-value { color: #1f2937; }
+  .appeal-status-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+    background: #f3f4f6; color: #374151;
+  }
+  .appeal-status-tag.none { background: #d1fae5; color: #065f46; }
+  .appeal-status-tag.received { background: #fed7aa; color: #9a3412; }
+  .appeal-status-tag.reviewing { background: #dbeafe; color: #1e40af; }
+  .appeal-status-tag.approved { background: #c7d2fe; color: #3730a3; }
+  .appeal-status-tag.rejected { background: #fecaca; color: #991b1b; }
+
+  /* 체크리스트 */
+  .checklist {
+    border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;
+  }
+  .checklist-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px solid #f3f4f6;
+    font-size: 12.5px;
+  }
+  .checklist-row:last-child { border-bottom: none; }
+  .checklist-label { color: #1f2937; display: flex; align-items: center; gap: 8px; }
+  .check-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    font-size: 11px; font-weight: 700; color: white;
+  }
+  .check-icon.ok { background: #10b981; }
+  .check-icon.warn { background: #f59e0b; }
+  .check-icon.fail { background: #ef4444; }
+  .check-status { font-size: 11.5px; font-weight: 600; }
+  .check-status.ok { color: #065f46; }
+  .check-status.warn { color: #92400e; }
+  .check-status.fail { color: #991b1b; }
+
+  .check-summary {
+    background: #ecfdf5; border: 1px solid #a7f3d0;
+    padding: 10px 14px; margin-top: 8px; border-radius: 4px;
+    font-size: 12px; color: #065f46; display: flex; align-items: center; gap: 6px;
+  }
+  .check-summary.fail {
+    background: #fef2f2; border-color: #fecaca; color: #991b1b;
+  }
+
+  /* 상태별 버튼 정책 안내 */
+  .policy-box {
+    background: #f8fafc; border: 1px dashed #cbd5e1;
+    padding: 12px 14px; border-radius: 4px;
+    font-size: 11.5px; color: #475569;
+  }
+  .policy-box h4 {
+    font-size: 12px; color: #1e293b; margin-bottom: 6px;
+  }
+  .policy-box table {
+    width: 100%; border-collapse: collapse; margin-top: 4px;
+  }
+  .policy-box th, .policy-box td {
+    padding: 5px 8px; border: 1px solid #e2e8f0; text-align: left;
+    font-size: 11.5px;
+  }
+  .policy-box th { background: #f1f5f9; font-weight: 600; }
+
+  .panel-footer {
+    position: sticky; bottom: 0; background: #fff;
+    border-top: 1px solid #e5e7eb; padding: 12px 20px;
+    display: flex; justify-content: flex-end; gap: 6px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- 좌측 사이드 -->
+  <aside class="sidebar">
+    <div class="logo">오픈노하우 관리자</div>
+    <ul class="menu">
+      <li>대시보드</li>
+      <li>강의 관리</li>
+      <li>회원/채널 관리</li>
+      <li>CS 관리</li>
+      <li style="font-weight:700; background:#f3f4f6;">결제/정산</li>
+      <li class="sub">결제관리</li>
+      <li class="sub">환불관리</li>
+      <li class="sub">인프라 크레딧 관리</li>
+      <li class="sub active">정산관리</li>
+      <li class="sub">정산현황</li>
+      <li>통계</li>
+      <li>사이트운영</li>
+      <li>사이트관리</li>
+      <li>강사제안관리</li>
+    </ul>
+  </aside>
+
+  <div class="main">
+
+    <!-- 목록 -->
+    <section class="list-area">
+      <div class="page-title-row">
+        <div class="page-title">정산관리</div>
+        <div class="header-meta">홍길동 <b>전체관리자</b> | <a href="#" style="color:#2563eb">로그아웃</a></div>
+      </div>
+
+      <div class="filter-row">
+        <label style="color:#374151;font-size:12.5px;">결제일자</label>
+        <input type="date" value="2026-05-01">
+        <span>~</span>
+        <input type="date" value="2026-05-31">
+        <select>
+          <option>== 정산상태 ==</option>
+          <option>집계중</option>
+          <option>정산서 발행</option>
+          <option>이의신청 중</option>
+          <option>정산 확정</option>
+          <option>지급 처리 중</option>
+          <option>지급 완료</option>
+          <option>보류</option>
+        </select>
+        <button class="btn primary">검색</button>
+        <button class="btn">초기화</button>
+      </div>
+
+      <table class="list-table">
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th>정산번호</th>
+            <th>기업명</th>
+            <th>채널명</th>
+            <th class="num-right">정산 대상 금액</th>
+            <th>비율</th>
+            <th class="num-right">채널 지급 예정금</th>
+            <th>정산상태</th>
+            <th>지급예정일</th>
+            <th>지급완료일</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="selected">
+            <td>40</td>
+            <td>ST202605-1040</td>
+            <td>패스트캠퍼스</td>
+            <td>PM 실무 채널</td>
+            <td class="num-right">12,000,000원</td>
+            <td>30:70</td>
+            <td class="num-right">7,840,000원</td>
+            <td><span class="badge confirmed">정산 확정</span></td>
+            <td>2026-06-10</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>39</td>
+            <td>ST202605-1039</td>
+            <td>클래스팀</td>
+            <td>UX 리서치 아카데미</td>
+            <td class="num-right">8,000,000원</td>
+            <td>25:75</td>
+            <td class="num-right">6,000,000원</td>
+            <td><span class="badge issued">정산서 발행</span></td>
+            <td>2026-06-10</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>38</td>
+            <td>ST202605-1038</td>
+            <td>오픈인사이트</td>
+            <td>데이터 분석 입문</td>
+            <td class="num-right">14,000,000원</td>
+            <td>20:80</td>
+            <td class="num-right">11,200,000원</td>
+            <td><span class="badge appeal">이의신청 중</span></td>
+            <td>2026-06-12</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>37</td>
+            <td>위클리러닝</td>
+            <td>위클리러닝</td>
+            <td>AI 자동화 스쿨</td>
+            <td class="num-right">6,700,000원</td>
+            <td>30:70</td>
+            <td class="num-right">4,690,000원</td>
+            <td><span class="badge paid">지급 완료</span></td>
+            <td>2026-06-08</td>
+            <td>2026-06-08</td>
+          </tr>
+          <tr>
+            <td>36</td>
+            <td>ST202605-1036</td>
+            <td>비즈교육</td>
+            <td>사업계획서 작성법</td>
+            <td class="num-right">4,600,000원</td>
+            <td>35:65</td>
+            <td class="num-right">2,990,000원</td>
+            <td><span class="badge aggregating">집계중</span></td>
+            <td>2026-06-15</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>35</td>
+            <td>ST202605-1035</td>
+            <td>넥스트에듀</td>
+            <td>프론트엔드 마스터</td>
+            <td class="num-right">16,500,000원</td>
+            <td>30:70</td>
+            <td class="num-right">11,550,000원</td>
+            <td><span class="badge hold">보류</span></td>
+            <td>2026-06-07</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 우측 상세 패널 -->
+    <aside class="detail-panel">
+
+      <!-- ① 헤더 -->
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <div class="settle-no">ST202605-1040</div>
+          <span class="badge confirmed">정산 확정</span>
+          <span style="font-size:11.5px;color:#6b7280;">| 이의신청 종료 · 지급 처리 가능</span>
+        </div>
+        <div class="panel-header-actions">
+          <button class="btn-sm">정산서 다운로드</button>
+          <button class="btn-sm primary">지급 처리</button>
+          <button class="btn-sm warn">보류</button>
+          <button class="btn-sm close">✕</button>
+        </div>
+      </div>
+
+      <!-- ② 정산 기본 정보 -->
+      <div class="section">
+        <div class="section-title"><span class="num">2</span>정산 기본 정보</div>
+        <div class="info-grid">
+          <div class="label">정산번호</div>
+          <div class="value">ST202605-1040</div>
+          <div class="label">정산 회차</div>
+          <div class="value">2026년 5월 정기정산</div>
+
+          <div class="label">정산 대상 기간</div>
+          <div class="value">2026-05-01 ~ 2026-05-31</div>
+          <div class="label">정산 유형</div>
+          <div class="value">월 정기정산</div>
+
+          <div class="label">정산서 발행일</div>
+          <div class="value">2026-06-01</div>
+          <div class="label">이의신청 마감일</div>
+          <div class="value">2026-06-04 18:00</div>
+
+          <div class="label">정산 확정일</div>
+          <div class="value">2026-06-05</div>
+          <div class="label">지급 예정일</div>
+          <div class="value">2026-06-10</div>
+
+          <div class="label">지급 완료일</div>
+          <div class="value">-</div>
+          <div class="label">통화</div>
+          <div class="value">KRW (VAT 별도)</div>
+        </div>
+      </div>
+
+      <!-- ③ 기업 / 채널 정보 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="num">3</span>기업 / 채널 정보
+          <span class="section-subtitle"><a href="#" style="color:#2563eb;">[채널 상세 보기]</a></span>
+        </div>
+        <div class="info-grid">
+          <div class="label">기업명</div>
+          <div class="value">패스트캠퍼스</div>
+          <div class="label">사업자등록번호</div>
+          <div class="value">119-86-79498</div>
+
+          <div class="label">대표자명</div>
+          <div class="value">이정호</div>
+          <div class="label">회사연락처</div>
+          <div class="value">07-044-8034</div>
+
+          <div class="label">채널명</div>
+          <div class="value">PM 실무 채널</div>
+          <div class="label">채널 개설일</div>
+          <div class="value">2025-08-12</div>
+
+          <div class="label">채널관리자</div>
+          <div class="value">김민준 (minjun@email.com)</div>
+          <div class="label">정산 담당자</div>
+          <div class="value">정승연 / 010-4607-3525</div>
+
+          <div class="label">정산용 계좌</div>
+          <div class="value">국민은행 123-45-67890 (예금주: 패스트캠퍼스)</div>
+          <div class="label">계좌 승인 상태</div>
+          <div class="value"><span class="check-status ok">✓ 승인 완료</span></div>
+        </div>
+        <div class="info-note">계좌 변경은 채널관리자가 직접 등록 후 관리자 승인이 필요합니다. 인프라 사용료 관련 정산은 [결제/정산 &gt; 인프라 크레딧 관리]에서 별도 처리됩니다.</div>
+      </div>
+
+      <!-- ④ 매출 집계 내역 -->
+      <div class="section">
+        <div class="section-title"><span class="num">4</span>매출 집계 내역</div>
+        <table class="calc-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th style="text-align:right;">매출액</th>
+              <th style="text-align:right;">환불액</th>
+              <th style="text-align:right;">정산 대상액</th>
+              <th>건수</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>단건 강의 판매</td>
+              <td class="num">8,500,000원</td>
+              <td class="num minus">-400,000원</td>
+              <td class="num">8,100,000원</td>
+              <td>32건 (환불 1건)</td>
+            </tr>
+            <tr>
+              <td>채널 구독</td>
+              <td class="num">3,200,000원</td>
+              <td class="num minus">-100,000원</td>
+              <td class="num">3,100,000원</td>
+              <td>구독자 64명 (환불 1건)</td>
+            </tr>
+            <tr>
+              <td>강사제공서비스</td>
+              <td class="num">800,000원</td>
+              <td class="num">0원</td>
+              <td class="num">800,000원</td>
+              <td>20건</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>합계</td>
+              <td class="num">12,500,000원 (A)</td>
+              <td class="num">-500,000원 (B)</td>
+              <td class="num">12,000,000원 (C)</td>
+              <td>-</td>
+            </tr>
+          </tfoot>
+        </table>
+        <div class="info-note">정산 대상 금액 C = A - B = 12,000,000원</div>
+      </div>
+
+      <!-- ⑤ 정산 비율 및 분배 산정 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="num">5</span>정산 비율 및 분배 산정
+          <span class="section-subtitle">계약 비율 30:70 (계약일 2025-08-12)</span>
+        </div>
+        <table class="calc-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>비율</th>
+              <th style="text-align:right;">금액</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>정산 대상 금액 (C)</td>
+              <td>100%</td>
+              <td class="num">12,000,000원</td>
+            </tr>
+            <tr>
+              <td><b>플랫폼 수익금</b> (C × 30%)</td>
+              <td>30%</td>
+              <td class="num"><b>3,600,000원</b></td>
+            </tr>
+            <tr style="background:#eff6ff;">
+              <td><b>채널 귀속 금액</b> (C × 70%)</td>
+              <td>70%</td>
+              <td class="num"><b>8,400,000원</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ⑥ 채널 지급 예정금 산정 (강사 정산금 정합성 수정) -->
+      <div class="section">
+        <div class="section-title"><span class="num">6</span>채널 지급 예정금 산정</div>
+        <table class="calc-table">
+          <thead>
+            <tr>
+              <th>항목</th>
+              <th style="text-align:right;">금액</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>채널 귀속 금액</td>
+              <td class="num">8,400,000원</td>
+              <td>C × 70%</td>
+            </tr>
+            <tr>
+              <td>(-) 강사 직접 지급분</td>
+              <td class="num minus">-560,000원</td>
+              <td>강사제공서비스 강사 귀속분 (⑨ 참조)</td>
+            </tr>
+            <tr>
+              <td>(-) 기타 차감 (페널티/조정)</td>
+              <td class="num">0원</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="highlight-box">
+          <div class="h-label">채널 지급 예정금 (최종)</div>
+          <div>
+            <span class="h-value">7,840,000원</span>
+            <span class="h-sub">VAT 별도</span>
+          </div>
+        </div>
+
+        <div class="instructor-note">
+          <span>본 채널은 <b>플랫폼이 강사에게 직접 지급</b>하는 케이스B로 운영됩니다. 따라서 강사 귀속분 560,000원은 채널 지급금에서 차감되며, 강사 개인 계좌로 별도 지급됩니다.</span>
+        </div>
+      </div>
+
+      <!-- ⑦ 강의별 매출 상세 -->
+      <div class="section">
+        <div class="section-title"><span class="num">7</span>강의별 매출 상세</div>
+        <details>
+          <summary>강의별 매출 상세 보기 <span class="summary-count">총 8개 강의</span></summary>
+          <div class="details-body">
+            <table class="calc-table">
+              <thead>
+                <tr>
+                  <th>번호</th>
+                  <th>강의명</th>
+                  <th style="text-align:right;">판매</th>
+                  <th style="text-align:right;">매출액</th>
+                  <th style="text-align:right;">환불액</th>
+                  <th style="text-align:right;">정산 대상액</th>
+                  <th style="text-align:right;">채널 귀속 (70%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td><a href="#" style="color:#2563eb">PM 실무 A to Z</a></td>
+                  <td class="num">12</td>
+                  <td class="num">4,800,000원</td>
+                  <td class="num minus">-400,000원</td>
+                  <td class="num">4,400,000원</td>
+                  <td class="num">3,080,000원</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td><a href="#" style="color:#2563eb">사용자 리서치 기초</a></td>
+                  <td class="num">8</td>
+                  <td class="num">2,400,000원</td>
+                  <td class="num">0원</td>
+                  <td class="num">2,400,000원</td>
+                  <td class="num">1,680,000원</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td><a href="#" style="color:#2563eb">PRD 작성 워크샵</a></td>
+                  <td class="num">5</td>
+                  <td class="num">1,300,000원</td>
+                  <td class="num">0원</td>
+                  <td class="num">1,300,000원</td>
+                  <td class="num">910,000원</td>
+                </tr>
+                <tr>
+                  <td colspan="7" style="text-align:center; color:#9ca3af;">... 외 5개 강의</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3">합계</td>
+                  <td class="num">8,500,000원</td>
+                  <td class="num">-400,000원</td>
+                  <td class="num">8,100,000원</td>
+                  <td class="num">5,670,000원</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </details>
+      </div>
+
+      <!-- ⑧ 구독 매출 상세 -->
+      <div class="section">
+        <div class="section-title"><span class="num">8</span>구독 매출 상세</div>
+        <details>
+          <summary>구독 매출 상세 보기 <span class="summary-count">활성 구독자 64명</span></summary>
+          <div class="details-body">
+            <table class="calc-table">
+              <thead>
+                <tr>
+                  <th>구독 플랜</th>
+                  <th style="text-align:right;">활성</th>
+                  <th style="text-align:right;">신규</th>
+                  <th style="text-align:right;">해지</th>
+                  <th style="text-align:right;">매출액</th>
+                  <th style="text-align:right;">환불액</th>
+                  <th style="text-align:right;">정산 대상액</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>월 구독 (49,000원)</td>
+                  <td class="num">50명</td>
+                  <td class="num">8</td>
+                  <td class="num">3</td>
+                  <td class="num">2,450,000원</td>
+                  <td class="num minus">-49,000원</td>
+                  <td class="num">2,401,000원</td>
+                </tr>
+                <tr>
+                  <td>연 구독 (490,000원)</td>
+                  <td class="num">14명</td>
+                  <td class="num">2</td>
+                  <td class="num">0</td>
+                  <td class="num">750,000원</td>
+                  <td class="num minus">-51,000원</td>
+                  <td class="num">699,000원</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>합계</td>
+                  <td class="num">64명</td>
+                  <td class="num">10</td>
+                  <td class="num">3</td>
+                  <td class="num">3,200,000원</td>
+                  <td class="num">-100,000원</td>
+                  <td class="num">3,100,000원</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </details>
+      </div>
+
+      <!-- ⑨ 강사제공서비스 매출 상세 -->
+      <div class="section">
+        <div class="section-title"><span class="num">9</span>강사제공서비스 매출 상세</div>
+        <details>
+          <summary>강사제공서비스 상세 보기 <span class="summary-count">총 20건 / 강사 2명 · 강사 직접 지급분 합계 560,000원</span></summary>
+          <div class="details-body">
+            <table class="calc-table">
+              <thead>
+                <tr>
+                  <th>강사명</th>
+                  <th>서비스 유형</th>
+                  <th style="text-align:right;">건수</th>
+                  <th style="text-align:right;">매출액</th>
+                  <th style="text-align:right;">강사 귀속분 (70%)</th>
+                  <th style="text-align:right;">채널·플랫폼 귀속분 (30%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>이수진 강사</td>
+                  <td>1:1 화상 상담</td>
+                  <td class="num">8</td>
+                  <td class="num">400,000원</td>
+                  <td class="num">280,000원</td>
+                  <td class="num">120,000원</td>
+                </tr>
+                <tr>
+                  <td>박상우 강사</td>
+                  <td>기획서 피드백</td>
+                  <td class="num">10</td>
+                  <td class="num">300,000원</td>
+                  <td class="num">210,000원</td>
+                  <td class="num">90,000원</td>
+                </tr>
+                <tr>
+                  <td>이수진 강사</td>
+                  <td>Q&A</td>
+                  <td class="num">2</td>
+                  <td class="num">100,000원</td>
+                  <td class="num">70,000원</td>
+                  <td class="num">30,000원</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2">합계</td>
+                  <td class="num">20</td>
+                  <td class="num">800,000원</td>
+                  <td class="num">560,000원</td>
+                  <td class="num">240,000원</td>
+                </tr>
+              </tfoot>
+            </table>
+            <div class="instructor-note">
+              <span><b>강사 귀속분 합계 560,000원은 ⑥의 "강사 직접 지급분" 차감 금액과 일치합니다.</b> 본 금액은 강사 개인 계좌로 분리 지급되며, 강사별 정산 내역은 [강사관리 &gt; 강사 정산] 메뉴에서 확인할 수 있습니다.</span>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- ⑩ 환불 내역 -->
+      <div class="section">
+        <div class="section-title"><span class="num">10</span>환불 내역</div>
+        <details>
+          <summary>환불 내역 보기 <span class="summary-count">총 3건 / 500,000원</span></summary>
+          <div class="details-body">
+            <table class="calc-table">
+              <thead>
+                <tr>
+                  <th>환불번호</th>
+                  <th>환불일</th>
+                  <th>학습자</th>
+                  <th>구분</th>
+                  <th>강의/플랜명</th>
+                  <th style="text-align:right;">환불 금액</th>
+                  <th>환불 사유</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>RF-2605-021</td>
+                  <td>2026-05-08</td>
+                  <td>박지호</td>
+                  <td>단건 강의</td>
+                  <td>PM 실무 A to Z</td>
+                  <td class="num minus">-400,000원</td>
+                  <td>단순 변심 (7일 이내)</td>
+                </tr>
+                <tr>
+                  <td>RF-2605-045</td>
+                  <td>2026-05-22</td>
+                  <td>이서연</td>
+                  <td>월 구독</td>
+                  <td>월 구독 (49,000원)</td>
+                  <td class="num minus">-49,000원</td>
+                  <td>서비스 불만족</td>
+                </tr>
+                <tr>
+                  <td>RF-2605-058</td>
+                  <td>2026-05-28</td>
+                  <td>김도현</td>
+                  <td>연 구독</td>
+                  <td>연 구독 (490,000원)</td>
+                  <td class="num minus">-51,000원</td>
+                  <td>일할 환불 (10개월 미사용분)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+
+      <!-- ⑪ 이의신청 처리 현황 (신규) -->
+      <div class="section">
+        <div class="section-title">
+          <span class="num">11</span>이의신청 처리 현황
+          <span class="section-subtitle">정산 확정 전 채널이 정산 내역에 대해 이의를 제기할 수 있는 절차</span>
+        </div>
+        <div class="appeal-card">
+          <div class="ac-label">이의신청 가능 기간</div>
+          <div class="ac-value">2026-06-01 ~ 2026-06-04 18:00 <span style="color:#9ca3af;">(정산서 발행일로부터 3영업일)</span></div>
+
+          <div class="ac-label">이의신청 상태</div>
+          <div class="ac-value"><span class="appeal-status-tag none">이의신청 없음</span></div>
+
+          <div class="ac-label">이의신청 접수일</div>
+          <div class="ac-value">-</div>
+
+          <div class="ac-label">이의신청 사유</div>
+          <div class="ac-value">-</div>
+
+          <div class="ac-label">처리 결과</div>
+          <div class="ac-value">-</div>
+
+          <div class="ac-label">처리자</div>
+          <div class="ac-value">-</div>
+
+          <div class="ac-label">근거 자료</div>
+          <div class="ac-value">-</div>
+        </div>
+        <div class="info-note">이의신청이 접수된 경우 정산은 자동으로 "이의신청 중" 상태로 변경되며, 운영팀이 AWS 원본 로그 및 결제 내역을 기준으로 검증합니다. 합의 시 수정 정산서가 발행되며 기존 정산은 취소 처리됩니다.</div>
+      </div>
+
+      <!-- ⑫ 정산 상태 변경 이력 -->
+      <div class="section">
+        <div class="section-title">
+          <span class="num">12</span>정산 상태 변경 이력
+          <span class="section-subtitle">집계중 → 정산서 발행 → 이의신청 대기 → 정산 확정 → 지급 처리 → 지급 완료</span>
+        </div>
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th style="width:48px;">번호</th>
+              <th style="width:120px;">변경상태</th>
+              <th>변경사유</th>
+              <th style="width:110px;">처리자</th>
+              <th style="width:150px;">변경일</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="center">4</td>
+              <td><span class="history-status s-confirmed">정산 확정</span></td>
+              <td>이의신청 기간 종료, 자동 확정</td>
+              <td>시스템 자동</td>
+              <td>2026-06-05 00:00:01</td>
+            </tr>
+            <tr>
+              <td class="center">3</td>
+              <td><span class="history-status s-appeal-end">이의신청 기간 종료</span></td>
+              <td>접수된 이의신청 없음</td>
+              <td>시스템 자동</td>
+              <td>2026-06-04 18:00:00</td>
+            </tr>
+            <tr>
+              <td class="center">2</td>
+              <td><span class="history-status s-issued">정산서 발행</span></td>
+              <td>5월 정기정산 초안 발송 (5영업일 전)</td>
+              <td>시스템 자동</td>
+              <td>2026-06-01 09:00:00</td>
+            </tr>
+            <tr>
+              <td class="center">1</td>
+              <td><span class="history-status s-init">집계중 → 집계 완료</span></td>
+              <td>월말 마감 집계 완료</td>
+              <td>시스템 자동</td>
+              <td>2026-05-31 23:59:59</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ⑬ 지급 처리 전 체크리스트 (신규) -->
+      <div class="section">
+        <div class="section-title">
+          <span class="num">13</span>지급 처리 전 체크리스트
+          <span class="section-subtitle">모든 항목이 완료되어야 [지급 처리] 버튼이 활성화됩니다</span>
+        </div>
+        <div class="checklist">
+          <div class="checklist-row">
+            <div class="checklist-label">
+              <span class="check-icon ok">✓</span>
+              정산 확정 완료 여부
+            </div>
+            <span class="check-status ok">완료 (2026-06-05)</span>
+          </div>
+          <div class="checklist-row">
+            <div class="checklist-label">
+              <span class="check-icon ok">✓</span>
+              이의신청 기간 종료 여부
+            </div>
+            <span class="check-status ok">완료 (2026-06-04 18:00)</span>
+          </div>
+          <div class="checklist-row">
+            <div class="checklist-label">
+              <span class="check-icon ok">✓</span>
+              정산용 계좌 승인 여부
+            </div>
+            <span class="check-status ok">승인 완료</span>
+          </div>
+          <div class="checklist-row">
+            <div class="checklist-label">
+              <span class="check-icon ok">✓</span>
+              지급 보류 여부
+            </div>
+            <span class="check-status ok">보류 없음</span>
+          </div>
+          <div class="checklist-row">
+            <div class="checklist-label">
+              <span class="check-icon ok">✓</span>
+              세금계산서 발행 여부
+            </div>
+            <span class="check-status ok">발행 완료</span>
+          </div>
+          <div class="checklist-row">
+            <div class="checklist-label">
+              <span class="check-icon warn">!</span>
+              내부 메모 확인 (선택)
+            </div>
+            <span class="check-status warn">미확인 (1건)</span>
+          </div>
+        </div>
+        <div class="check-summary">
+          <span style="font-weight:700;">✓</span>
+          <span>필수 체크 항목 5/5 완료 — <b>지급 처리 가능</b> 상태입니다.</span>
+        </div>
+      </div>
+
+      <!-- ⑭ 메모 / 특이사항 -->
+      <div class="section memo-area">
+        <div class="section-title"><span class="num">14</span>메모 / 특이사항</div>
+        <textarea placeholder="내부 운영 메모를 입력하세요. (예: 5/22 환불 건은 강의 품질 이슈로 채널 측과 협의 완료. 추가 페널티 없음.)"></textarea>
+        <div class="memo-notice">※ 본 메모는 내부 운영 목적이며 채널에는 노출되지 않습니다.</div>
+        <div class="memo-actions">
+          <button class="btn-sm">취소</button>
+          <button class="btn-sm primary">메모 저장</button>
+        </div>
+
+        <!-- 상태별 액션 버튼 정책 안내 -->
+        <div class="policy-box" style="margin-top:16px;">
+          <h4>📋 상태별 액션 버튼 노출 정책</h4>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:120px;">정산 상태</th>
+                <th>노출 버튼</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge aggregating" style="font-size:10.5px;">집계중</span></td>
+                <td>[정산서 생성] [보류] — 처리 버튼 비활성</td>
+              </tr>
+              <tr>
+                <td><span class="badge issued" style="font-size:10.5px;">정산서 발행</span></td>
+                <td>[정산서 재발송] [정산서 다운로드] [보류]</td>
+              </tr>
+              <tr>
+                <td><span class="badge appeal" style="font-size:10.5px;">이의신청 중</span></td>
+                <td>[이의신청 확인] [수정 정산서 발행] [보류]</td>
+              </tr>
+              <tr>
+                <td><span class="badge confirmed" style="font-size:10.5px;">정산 확정</span></td>
+                <td><b>[지급 처리]</b> [정산서 다운로드] [보류]</td>
+              </tr>
+              <tr>
+                <td><span class="badge paying" style="font-size:10.5px;">지급 처리 중</span></td>
+                <td>[지급 완료 처리] [지급 취소]</td>
+              </tr>
+              <tr>
+                <td><span class="badge paid" style="font-size:10.5px;">지급 완료</span></td>
+                <td>[정산서 다운로드] [지급 증빙 다운로드]</td>
+              </tr>
+              <tr>
+                <td><span class="badge hold" style="font-size:10.5px;">보류</span></td>
+                <td>[보류 해제] [메모 저장]</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 풋터 -->
+      <div class="panel-footer">
+        <button class="btn-sm">정산서 다운로드</button>
+        <button class="btn-sm warn">보류</button>
+        <button class="btn-sm primary">지급 처리</button>
+      </div>
+
+    </aside>
+
+  </div>
+</div>
+
+</body>
+</html>
