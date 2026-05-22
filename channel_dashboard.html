@@ -503,6 +503,371 @@
     padding: 40px 0;
     font-size: 13px;
   }
+
+  /* ============================================================
+     크레딧 충전 레이어 팝업 (LAP) — Credit Charge Modal
+     ============================================================ */
+  .cc-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(17, 24, 39, 0.55);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 44px 20px;
+    overflow-y: auto;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
+  .cc-overlay.open { opacity: 1; visibility: visible; }
+
+  .cc-modal {
+    width: 100%; max-width: 768px;
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: 0 24px 64px -12px rgba(17, 24, 39, 0.34);
+    margin: auto;
+    max-height: calc(100vh - 88px);
+    display: flex; flex-direction: column;
+    transform: translateY(18px) scale(0.98);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .cc-overlay.open .cc-modal { transform: translateY(0) scale(1); }
+
+  /* ── 헤더 ── */
+  .cc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .cc-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .cc-close {
+    width: 32px; height: 32px;
+    border: none; background: transparent;
+    border-radius: 7px; cursor: pointer;
+    color: var(--text-faint);
+    display: grid; place-items: center;
+    transition: all 0.15s;
+  }
+  .cc-close:hover { background: var(--bg); color: var(--text); }
+
+  /* ── 바디 ── */
+  .cc-body {
+    padding: 22px 24px;
+    display: flex; flex-direction: column; gap: 22px;
+    overflow-y: auto;
+  }
+  .cc-block { display: flex; flex-direction: column; gap: 10px; }
+  .cc-sec-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700;
+    color: var(--text-sub);
+    letter-spacing: 0.03em; text-transform: uppercase;
+  }
+  .cc-sec-label .num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-size: 11px; font-weight: 700;
+    display: grid; place-items: center;
+    text-transform: none;
+  }
+  .cc-sec-hint {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-faint); text-transform: none; letter-spacing: 0;
+  }
+
+  /* ── 현재 상태 요약 박스 ── */
+  .cc-summary {
+    background: var(--primary-light);
+    border: 1px solid #DDE1FB;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .cc-sum-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .cc-sum-item {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .cc-sum-item span {
+    font-size: 11px; color: var(--text-sub); font-weight: 600;
+  }
+  .cc-sum-item strong {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .cc-sum-item strong.warn { color: var(--orange); }
+  .cc-sum-note {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px dashed #C7CDF5;
+    font-size: 12px; color: #4338CA; font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── 등급 선택 카드 ── */
+  .cc-tiers { display: flex; flex-direction: column; gap: 8px; }
+  .cc-tier {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .cc-tier:hover { border-color: var(--border-strong); }
+  .cc-tier.selected {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+  .cc-tier.blocked {
+    cursor: not-allowed;
+    background: var(--bg);
+    border-style: dashed;
+    opacity: 0.7;
+  }
+  .cc-radio {
+    width: 18px; height: 18px; flex-shrink: 0;
+    border: 2px solid var(--border-strong);
+    border-radius: 50%;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .cc-tier.selected .cc-radio { border-color: var(--primary); }
+  .cc-tier.selected .cc-radio::after {
+    content: ""; position: absolute; inset: 3px;
+    background: var(--primary); border-radius: 50%;
+  }
+  .cc-tier.blocked .cc-radio { background: var(--border); border-color: var(--border-strong); }
+
+  .cc-tier-main { flex: 1; min-width: 0; }
+  .cc-tier-head {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 5px;
+  }
+  .cc-tier-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .cc-tier-target { font-size: 12px; color: var(--text-sub); }
+  .cc-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  .cc-badge.current { background: var(--green-light); color: #047857; }
+  .cc-badge.blocked { background: var(--red-light); color: #B91C1C; }
+  .cc-tier-stats {
+    display: flex; flex-wrap: wrap; gap: 4px 14px;
+    font-size: 12px; color: var(--text-sub);
+  }
+  .cc-tier-stats b { color: var(--text); font-weight: 600; }
+  .cc-tier-price { text-align: right; flex-shrink: 0; }
+  .cc-price-amt {
+    display: block; font-size: 16px; font-weight: 700;
+    color: var(--primary); letter-spacing: -0.01em;
+  }
+  .cc-tier.blocked .cc-price-amt { color: var(--text-faint); }
+  .cc-price-cap { font-size: 10px; color: var(--text-faint); font-weight: 600; }
+
+  /* ── 산정 기준 (접기/펼치기) ── */
+  .cc-calc {
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    overflow: hidden;
+  }
+  .cc-calc-toggle {
+    width: 100%; border: none; background: var(--bg);
+    padding: 11px 14px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600; color: var(--text-sub);
+    cursor: pointer;
+  }
+  .cc-calc-toggle .chev {
+    margin-left: auto; transition: transform 0.2s;
+  }
+  .cc-calc.open .cc-calc-toggle .chev { transform: rotate(180deg); }
+  .cc-calc-body { display: none; padding: 14px; }
+  .cc-calc.open .cc-calc-body { display: block; }
+  .cc-calc-body ul {
+    margin: 0 0 10px; padding-left: 16px;
+    font-size: 12px; color: var(--text-sub); line-height: 1.7;
+  }
+  .cc-formula {
+    background: #1F2937; color: #E5E7EB;
+    border-radius: 6px; padding: 10px 12px;
+    font-size: 12px; font-family: "SFMono-Regular", Consolas, monospace;
+    margin-bottom: 8px;
+  }
+  .cc-calc-note { font-size: 11px; color: var(--text-faint); }
+
+  /* ── 임계값 미리보기 ── */
+  .cc-preview { display: flex; flex-direction: column; gap: 6px; }
+  .cc-thr {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    border-left-width: 4px;
+  }
+  .cc-thr.green  { border-left-color: var(--green); }
+  .cc-thr.yellow { border-left-color: var(--yellow); }
+  .cc-thr.orange { border-left-color: var(--orange); }
+  .cc-thr.red    { border-left-color: var(--red); }
+  .cc-thr-pct {
+    font-size: 14px; font-weight: 700; width: 46px; flex-shrink: 0;
+  }
+  .cc-thr.green  .cc-thr-pct { color: var(--green); }
+  .cc-thr.yellow .cc-thr-pct { color: #B45309; }
+  .cc-thr.orange .cc-thr-pct { color: var(--orange); }
+  .cc-thr.red    .cc-thr-pct { color: var(--red); }
+  .cc-thr-amt {
+    font-size: 13px; font-weight: 700; width: 92px; flex-shrink: 0;
+    color: var(--text);
+  }
+  .cc-thr-info { font-size: 12px; color: var(--text-sub); }
+  .cc-thr-info b { color: var(--text); font-weight: 600; }
+  .cc-empty {
+    padding: 22px; text-align: center;
+    font-size: 13px; color: var(--text-faint);
+    border: 1px dashed var(--border-strong); border-radius: 9px;
+  }
+  .cc-nego-box {
+    padding: 14px 16px;
+    background: #FFF9F0; border: 1px solid #FCD9A8;
+    border-radius: 9px;
+    font-size: 13px; color: #9A3412;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── 결제 요약 ── */
+  .cc-pay {
+    border: 1px solid var(--border);
+    border-radius: 9px; overflow: hidden;
+  }
+  .cc-pay-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cc-pay-row span { color: var(--text-sub); }
+  .cc-pay-row strong { color: var(--text); font-weight: 600; }
+  .cc-pay-row.total {
+    background: var(--bg);
+    border-bottom: none;
+  }
+  .cc-pay-row.total span { color: var(--text); font-weight: 700; }
+  .cc-pay-row.total strong {
+    font-size: 18px; font-weight: 700; color: var(--primary);
+  }
+  .cc-pay-method {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+  }
+
+  /* ── 협의 입력 폼 ── */
+  .cc-form { display: flex; flex-direction: column; gap: 12px; }
+  .cc-field { display: flex; flex-direction: column; gap: 5px; }
+  .cc-field label {
+    font-size: 12px; font-weight: 600; color: var(--text-sub);
+  }
+  .cc-field label .req { color: var(--red); margin-left: 2px; }
+  .cc-field input, .cc-field textarea {
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    padding: 9px 11px;
+    font-size: 13px; font-family: inherit;
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+  .cc-field input:focus, .cc-field textarea:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+  .cc-field textarea { resize: vertical; min-height: 64px; }
+  .cc-form-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+
+  /* ── 동의 영역 ── */
+  .cc-agree {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .cc-check {
+    width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 5px;
+    display: grid; place-items: center;
+    color: #fff;
+    transition: all 0.15s;
+  }
+  .cc-agree.checked .cc-check {
+    background: var(--primary); border-color: var(--primary);
+  }
+  .cc-check svg { opacity: 0; transition: opacity 0.15s; }
+  .cc-agree.checked .cc-check svg { opacity: 1; }
+  .cc-agree-text { font-size: 13px; color: var(--text); }
+  .cc-agree-text .req { color: var(--red); font-weight: 700; margin-right: 3px; }
+
+  /* ── 푸터 ── */
+  .cc-footer {
+    display: flex; justify-content: flex-end; gap: 8px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .cc-btn {
+    height: 40px; padding: 0 20px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cc-btn-cancel {
+    background: var(--card); color: var(--text-sub);
+    border: 1px solid var(--border-strong);
+  }
+  .cc-btn-cancel:hover { background: var(--bg); color: var(--text); }
+  .cc-btn-primary {
+    background: var(--primary); color: #fff; border: 1px solid var(--primary);
+  }
+  .cc-btn-primary:hover:not(:disabled) { background: #4338CA; }
+  .cc-btn-primary:disabled {
+    background: var(--border); border-color: var(--border);
+    color: var(--text-faint); cursor: not-allowed;
+  }
+
+  /* ── 토스트 ── */
+  .cc-toast {
+    position: fixed; left: 50%; bottom: 36px;
+    transform: translateX(-50%) translateY(12px);
+    background: #111827; color: #fff;
+    padding: 12px 20px; border-radius: 9px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 1100;
+    opacity: 0; visibility: hidden;
+    transition: all 0.25s ease;
+  }
+  .cc-toast.show {
+    opacity: 1; visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── 모바일 ── */
+  @media (max-width: 600px) {
+    .cc-overlay { padding: 0; }
+    .cc-modal { max-width: 100%; border-radius: 0; min-height: 100vh; max-height: 100vh; }
+    .cc-sum-grid { grid-template-columns: 1fr; gap: 8px; }
+    .cc-tier { flex-wrap: wrap; }
+    .cc-tier-price { text-align: left; width: 100%; padding-left: 32px; }
+    .cc-form-grid { grid-template-columns: 1fr; }
+    .cc-footer { position: sticky; bottom: 0; background: var(--card); }
+  }
 </style>
 </head>
 <body>
@@ -548,18 +913,12 @@
         <h1 class="page-title">대시보드</h1>
         <div class="page-subtitle">
           <span>사업 데이터 : 매일 새벽 1시 집계</span>
-          <span class="dot"></span>
           <span>인프라 데이터 : 지표별 갱신 주기 상이 (각 카드 우상단 참고)</span>
         </div>
       </div>
 
       <!-- ============ Section 1 : 선충전 크레딧 ============ -->
       <section class="section">
-        <div class="section-header">
-          <div class="section-title-wrap">
-            <span class="section-title">선충전 크레딧</span>
-          </div>
-        </div>
 
         <div class="card credit-card warn">
           <div class="credit-top">
@@ -573,7 +932,7 @@
               <div class="credit-amount">300,000<span class="unit">원</span></div>
               <div class="credit-used"><strong>89% 사용</strong> · 이번 달 한도 대비</div>
             </div>
-            <button class="btn-charge">크레딧 충전하기</button>
+            <button class="btn-charge" id="ccChargeBtn">크레딧 충전하기</button>
           </div>
 
           <div class="progress">
@@ -770,5 +1129,461 @@
     options: chartOpts
   });
 </script>
+
+<!-- ============================================================
+     크레딧 충전 레이어 팝업 (LAP)
+     ============================================================ -->
+<div class="cc-overlay" id="ccOverlay" role="dialog" aria-modal="true" aria-labelledby="ccTitleText">
+  <div class="cc-modal">
+
+    <!-- 1) 헤더 -->
+    <div class="cc-header">
+      <span class="cc-title" id="ccTitleText">크레딧 충전하기</span>
+      <button class="cc-close" id="ccClose" aria-label="닫기">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="cc-body">
+
+      <!-- 2) 현재 상태 안내 -->
+      <div class="cc-summary">
+        <div class="cc-sum-grid">
+          <div class="cc-sum-item">
+            <span>현재 선충전 크레딧</span>
+            <strong id="ccSumCeiling">—</strong>
+          </div>
+          <div class="cc-sum-item">
+            <span>이번 달 사용률</span>
+            <strong class="warn" id="ccSumRate">—</strong>
+          </div>
+          <div class="cc-sum-item">
+            <span>현재 등급</span>
+            <strong id="ccSumTier">—</strong>
+          </div>
+        </div>
+        <p class="cc-sum-note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          선충전 크레딧은 이번 달 사용 한도이자 미납 대비 담보입니다.
+        </p>
+      </div>
+
+      <!-- 3) 등급 선택 -->
+      <div class="cc-block">
+        <div class="cc-sec-label">
+          <span class="num">1</span> 등급 선택
+          <span class="cc-sec-hint">채널 규모에 맞는 등급을 직접 선택하세요</span>
+        </div>
+        <div class="cc-tiers" id="ccTiers"></div>
+      </div>
+
+      <!-- 4) 산정 기준 -->
+      <div class="cc-calc" id="ccCalc">
+        <button class="cc-calc-toggle" id="ccCalcToggle" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          참고 산정 기준 (환율 1,475원/$ 적용)
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="cc-calc-body">
+          <ul>
+            <li>영상 1시간 = 1.5GB FHD · 학습자 월 평균 시청 10시간</li>
+            <li>트래픽 220원/GB · 스토리지 80원/GB·월 · 안전 버퍼 1.5배</li>
+          </ul>
+          <div class="cc-formula">선충전 크레딧 = {(트래픽 GB × 220원) + (스토리지 GB·월 × 80원)} × 1.5</div>
+          <p class="cc-calc-note">위 공식은 등급 금액 책정의 근거이며, 실제 충전은 등급 직접 선택 방식입니다.</p>
+        </div>
+      </div>
+
+      <!-- 5) 임계값 미리보기 -->
+      <div class="cc-block">
+        <div class="cc-sec-label">
+          <span class="num">2</span> 선택 등급 임계값 미리보기
+        </div>
+        <div id="ccPreview"></div>
+      </div>
+
+      <!-- 6) 결제 요약 / 분기 -->
+      <div class="cc-block">
+        <div class="cc-sec-label">
+          <span class="num">3</span> <span id="ccPayLabel">결제 요약</span>
+        </div>
+        <div id="ccPayArea"></div>
+      </div>
+
+      <!-- 7) 동의 영역 -->
+      <div class="cc-block" id="ccAgreeBlock">
+        <label class="cc-agree" id="ccAgree">
+          <span class="cc-check">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span class="cc-agree-text">
+            <span class="req">[필수]</span>월 단위 후불 종량제 및 선충전 크레딧 정책에 동의합니다.
+          </span>
+        </label>
+      </div>
+
+    </div>
+
+    <!-- 8) 푸터 -->
+    <div class="cc-footer">
+      <button class="cc-btn cc-btn-cancel" id="ccCancel" type="button">취소</button>
+      <button class="cc-btn cc-btn-primary" id="ccSubmit" type="button" disabled>충전하기</button>
+    </div>
+
+  </div>
+</div>
+<div class="cc-toast" id="ccToast"></div>
+
+<script>
+(function () {
+  /* ===== 데이터 정의 (금액·수치 수정 용이하도록 분리) ===== */
+  const DASHBOARD = {
+    ceilingKRW: 300000,    // 현재 선충전 크레딧 한도 (대시보드 연동)
+    monthUsageKRW: 267000, // 이번 달 실사용 누적액
+    usageRate: 89,         // 사용률 % (대시보드 연동)
+    currentTierId: 1       // 현재 등급 (미설정 시 null)
+  };
+
+  const TIERS = [
+    { id: 1, name: '스타터',      target: '테스트·개인',  learners: '~50명',     courses: '~10개',  traffic: '~750 GB',    credit: 250000,   creditLabel: '25만원',        type: 'standard' },
+    { id: 2, name: '소형',        target: '소규모 강사',  learners: '~300명',    courses: '~30개',  traffic: '~4,500 GB',  credit: 1500000,  creditLabel: '150만원',       type: 'standard' },
+    { id: 3, name: '중형',        target: '중간 규모',    learners: '~1,000명',  courses: '~60개',  traffic: '~15,000 GB', credit: 5000000,  creditLabel: '500만원',       type: 'standard' },
+    { id: 4, name: '대형',        target: '대규모 채널',  learners: '~5,000명',  courses: '~150개', traffic: '~75,000 GB', credit: 25000000, creditLabel: '2,500만원',     type: 'standard' },
+    { id: 5, name: '엔터프라이즈', target: '대기업·기관',  learners: '10,000명+', courses: '300개+', traffic: '협의',        credit: null,     creditLabel: '협의 (1억원~)', type: 'negotiation' }
+  ];
+
+  const THRESHOLDS = [
+    { pct: 50,  color: 'green',  stage: '1차 알림',  action: '이메일·앱 푸시 발송 (정보 제공)' },
+    { pct: 80,  color: 'yellow', stage: '2차 알림',  action: '추가 충전 또는 한도 상향 권고' },
+    { pct: 100, color: 'orange', stage: '외상 진입', action: '신규 수강 신청 차단' },
+    { pct: 120, color: 'red',    stage: '학습 차단', action: '수강생 시청 차단 · 관리자 페이지만 접근' }
+  ];
+
+  /* ===== 유틸 ===== */
+  const won = n => n.toLocaleString('ko-KR') + '원';
+  const $ = s => document.querySelector(s);
+
+  /* ===== 상태 ===== */
+  let selectedId = null;
+  let agreed = false;
+  let dirty = false;
+
+  /* ===== 요소 ===== */
+  const overlay   = $('#ccOverlay');
+  const tiersEl   = $('#ccTiers');
+  const previewEl = $('#ccPreview');
+  const payAreaEl = $('#ccPayArea');
+  const payLabel  = $('#ccPayLabel');
+  const agreeBlk  = $('#ccAgreeBlock');
+  const agreeEl   = $('#ccAgree');
+  const submitBtn = $('#ccSubmit');
+  const calcEl    = $('#ccCalc');
+  const toastEl   = $('#ccToast');
+
+  /* 현재 사용량을 초과하는(= 사용량보다 낮은 한도) 등급은 선택 불가 */
+  function isBlocked(t) {
+    return t.type === 'standard' && t.credit < DASHBOARD.monthUsageKRW;
+  }
+  function getTier(id) { return TIERS.find(t => t.id === id); }
+
+  /* ===== 렌더: 상단 요약 ===== */
+  function renderSummary() {
+    $('#ccSumCeiling').textContent = won(DASHBOARD.ceilingKRW);
+    $('#ccSumRate').textContent = DASHBOARD.usageRate + '%';
+    const ct = getTier(DASHBOARD.currentTierId);
+    $('#ccSumTier').textContent = ct ? ct.name : '미선택';
+  }
+
+  /* ===== 렌더: 등급 카드 ===== */
+  function renderTiers() {
+    tiersEl.innerHTML = '';
+    TIERS.forEach(function (t) {
+      const blocked = isBlocked(t);
+      const isCurrent = t.id === DASHBOARD.currentTierId;
+      const row = document.createElement('div');
+      row.className = 'cc-tier'
+        + (selectedId === t.id ? ' selected' : '')
+        + (blocked ? ' blocked' : '');
+      row.dataset.id = t.id;
+
+      let badges = '';
+      if (isCurrent) badges += '<span class="cc-badge current">현재 등급</span>';
+      if (blocked)   badges += '<span class="cc-badge blocked">선택 불가 · 사용량 초과</span>';
+
+      row.innerHTML =
+        '<span class="cc-radio"></span>'
+        + '<div class="cc-tier-main">'
+        +   '<div class="cc-tier-head">'
+        +     '<span class="cc-tier-name">' + t.name + '</span>'
+        +     badges
+        +     '<span class="cc-tier-target">' + t.target + '</span>'
+        +   '</div>'
+        +   '<div class="cc-tier-stats">'
+        +     '<span>월 학습자 <b>' + t.learners + '</b></span>'
+        +     '<span>등록 강의 <b>' + t.courses + '</b></span>'
+        +     '<span>월 예상 트래픽 <b>' + t.traffic + '</b></span>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="cc-tier-price">'
+        +   '<span class="cc-price-amt">' + t.creditLabel + '</span>'
+        +   '<span class="cc-price-cap">선충전 크레딧</span>'
+        + '</div>';
+
+      row.addEventListener('click', function () { selectTier(t.id); });
+      tiersEl.appendChild(row);
+    });
+  }
+
+  /* ===== 렌더: 임계값 미리보기 ===== */
+  function renderPreview() {
+    const t = getTier(selectedId);
+    if (!t) {
+      previewEl.innerHTML = '<div class="cc-empty">등급을 선택하면 단계별 임계값이 표시됩니다.</div>';
+      return;
+    }
+    if (t.type === 'negotiation') {
+      previewEl.innerHTML =
+        '<div class="cc-nego-box">'
+        + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+        + '엔터프라이즈는 별도 협의로 한도가 산정되므로 임계값 미리보기가 제공되지 않습니다.'
+        + '</div>';
+      return;
+    }
+    const html = THRESHOLDS.map(function (th) {
+      return '<div class="cc-thr ' + th.color + '">'
+        + '<span class="cc-thr-pct">' + th.pct + '%</span>'
+        + '<span class="cc-thr-amt">' + won(Math.round(t.credit * th.pct / 100)) + '</span>'
+        + '<span class="cc-thr-info"><b>' + th.stage + '</b> — ' + th.action + '</span>'
+        + '</div>';
+    }).join('');
+    previewEl.innerHTML = '<div class="cc-preview">' + html + '</div>';
+  }
+
+  /* ===== 렌더: 결제 요약 / 협의 폼 ===== */
+  function renderPayArea() {
+    const t = getTier(selectedId);
+
+    if (!t) {
+      payLabel.textContent = '결제 요약';
+      payAreaEl.innerHTML = '<div class="cc-empty">등급을 선택하면 결제 정보가 표시됩니다.</div>';
+      agreeBlk.style.display = 'none';
+      return;
+    }
+
+    if (t.type === 'negotiation') {
+      payLabel.textContent = '협의 정보 입력';
+      payAreaEl.innerHTML =
+        '<div class="cc-nego-box" style="margin-bottom:12px;">'
+        + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+        + '담당자 협의가 필요한 등급입니다. 아래 정보를 남겨주시면 담당자가 연락드립니다.'
+        + '</div>'
+        + '<div class="cc-form">'
+        +   '<div class="cc-form-grid">'
+        +     '<div class="cc-field"><label>담당자명<span class="req">*</span></label><input type="text" id="ccNgName" placeholder="홍길동"></div>'
+        +     '<div class="cc-field"><label>연락처<span class="req">*</span></label><input type="text" id="ccNgPhone" placeholder="010-0000-0000"></div>'
+        +   '</div>'
+        +   '<div class="cc-field"><label>이메일<span class="req">*</span></label><input type="email" id="ccNgEmail" placeholder="name@company.com"></div>'
+        +   '<div class="cc-field"><label>예상 규모 메모 (선택)</label><textarea id="ccNgMemo" placeholder="예상 학습자 수, 강의 수, 트래픽 등을 적어주세요."></textarea></div>'
+        + '</div>';
+      agreeBlk.style.display = 'none';
+      ['ccNgName', 'ccNgPhone', 'ccNgEmail'].forEach(function (id) {
+        $('#' + id).addEventListener('input', function () { dirty = true; updateFooter(); });
+      });
+      $('#ccNgMemo').addEventListener('input', function () { dirty = true; });
+      return;
+    }
+
+    /* 1~4등급: 결제 요약 */
+    payLabel.textContent = '결제 요약';
+    const vat = Math.round(t.credit * 0.1);
+    payAreaEl.innerHTML =
+      '<div class="cc-pay">'
+      + '<div class="cc-pay-row"><span>선택 등급</span><strong>' + t.name + '</strong></div>'
+      + '<div class="cc-pay-row"><span>선충전 크레딧 금액</span><strong>' + won(t.credit) + '</strong></div>'
+      + '<div class="cc-pay-row"><span>VAT (10%)</span><strong>' + won(vat) + '</strong></div>'
+      + '<div class="cc-pay-row"><span>결제 수단</span>'
+      +   '<span class="cc-pay-method">'
+      +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>'
+      +     '카드 결제</span></div>'
+      + '<div class="cc-pay-row total"><span>최종 결제 예정 금액</span><strong>' + won(t.credit + vat) + '</strong></div>'
+      + '</div>';
+    agreeBlk.style.display = '';
+  }
+
+  /* ===== 푸터 버튼 상태 ===== */
+  function updateFooter() {
+    const t = getTier(selectedId);
+
+    if (t && t.type === 'negotiation') {
+      submitBtn.textContent = '협의 문의하기';
+      const filled = ['ccNgName', 'ccNgPhone', 'ccNgEmail'].every(function (id) {
+        const el = $('#' + id);
+        return el && el.value.trim() !== '';
+      });
+      submitBtn.disabled = !filled;
+    } else {
+      submitBtn.textContent = '충전하기';
+      submitBtn.disabled = !(t && agreed);
+    }
+  }
+
+  /* ===== 등급 선택 ===== */
+  function selectTier(id) {
+    const t = getTier(id);
+    if (isBlocked(t)) {
+      alert('현재 사용량을 초과하는 등급은 선택할 수 없습니다.');
+      return;
+    }
+    selectedId = id;
+    agreed = false;
+    agreeEl.classList.remove('checked');
+    dirty = true;
+    renderTiers();
+    renderPreview();
+    renderPayArea();
+    updateFooter();
+  }
+
+  /* ===== 동의 토글 ===== */
+  agreeEl.addEventListener('click', function () {
+    agreed = !agreed;
+    agreeEl.classList.toggle('checked', agreed);
+    dirty = true;
+    updateFooter();
+  });
+
+  /* ===== 산정 기준 접기/펼치기 ===== */
+  $('#ccCalcToggle').addEventListener('click', function () {
+    calcEl.classList.toggle('open');
+  });
+
+  /* ===== 토스트 ===== */
+  let toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 3200);
+  }
+
+  /* ===== 팝업 열기 / 닫기 ===== */
+  function openModal() {
+    selectedId = null;
+    agreed = false;
+    dirty = false;
+    agreeEl.classList.remove('checked');
+    calcEl.classList.remove('open');
+    renderSummary();
+    renderTiers();
+    renderPreview();
+    renderPayArea();
+    updateFooter();
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(force) {
+    if (dirty && !force) {
+      if (!confirm('변경사항이 저장되지 않습니다. 팝업을 닫으시겠습니까?')) return;
+    }
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  /* ===== 대시보드 갱신 (충전 성공 시) ===== */
+  function applyToDashboard(t) {
+    DASHBOARD.ceilingKRW = t.credit;
+    DASHBOARD.currentTierId = t.id;
+    const rate = Math.round(DASHBOARD.monthUsageKRW / t.credit * 100);
+    DASHBOARD.usageRate = rate;
+
+    const amtEl = document.querySelector('.credit-amount');
+    if (amtEl) amtEl.innerHTML = t.credit.toLocaleString('ko-KR') + '<span class="unit">원</span>';
+
+    const usedEl = document.querySelector('.credit-used');
+    if (usedEl) usedEl.innerHTML = '<strong>' + rate + '% 사용</strong> · 이번 달 한도 대비';
+
+    const fillEl = document.querySelector('.progress-fill');
+    if (fillEl) fillEl.style.width = Math.min(rate, 120) + '%';
+
+    const cardEl = document.querySelector('.credit-card');
+    const alertEl = document.querySelector('.credit-alert');
+    if (cardEl) {
+      cardEl.classList.remove('warn', 'danger', 'normal');
+      let cls, msg;
+      if (rate >= 100) {
+        cls = 'danger';
+        msg = '100% 한도 초과 — 신규 수강 신청이 차단된 상태입니다. 즉시 추가 충전이 필요합니다.';
+      } else if (rate >= 80) {
+        cls = 'warn';
+        msg = '80% 임계값 도달 — 추가 충전 또는 월 지출 한도 상향을 권장합니다. 100% 도달 시 신규 수강 신청이 차단됩니다.';
+      } else if (rate >= 50) {
+        cls = 'warn';
+        msg = '50% 임계값 도달 — 사용 추이를 확인하세요. 80% 도달 시 충전 권고 알림이 발송됩니다.';
+      } else {
+        cls = 'normal';
+        msg = '선충전 크레딧이 충분합니다. 현재 사용 추이 기준 이번 달 한도 내 운영이 예상됩니다.';
+      }
+      cardEl.classList.add(cls);
+      if (alertEl) {
+        const svg = alertEl.querySelector('svg');
+        alertEl.textContent = '';
+        if (svg) alertEl.appendChild(svg);
+        alertEl.insertAdjacentText('beforeend', msg);
+      }
+    }
+  }
+
+  /* ===== 메인 액션 (충전하기 / 협의 문의하기) ===== */
+  submitBtn.addEventListener('click', function () {
+    const t = getTier(selectedId);
+
+    if (!t) {
+      alert('등급을 선택해주세요.');
+      return;
+    }
+
+    /* 엔터프라이즈 — 협의 문의 */
+    if (t.type === 'negotiation') {
+      const name  = $('#ccNgName').value.trim();
+      const phone = $('#ccNgPhone').value.trim();
+      const email = $('#ccNgEmail').value.trim();
+      if (!name || !phone || !email) {
+        alert('담당자명·연락처·이메일은 필수 입력 항목입니다.');
+        return;
+      }
+      toast('협의 문의가 접수되었습니다. 담당자가 순차적으로 연락드립니다.');
+      closeModal(true);
+      return;
+    }
+
+    /* 1~4등급 — 카드 결제 */
+    if (!agreed) {
+      alert('월 단위 후불 종량제 정책에 동의해주세요.');
+      return;
+    }
+    if (!confirm('선택하신 [' + t.name + '] 등급으로 결제를 진행하시겠습니까?')) return;
+
+    /* 카드 결제 진행 (성공 가정) */
+    applyToDashboard(t);
+    alert('충전이 완료되었습니다.');
+    closeModal(true);
+  });
+
+  /* ===== 닫기 트리거 ===== */
+  $('#ccClose').addEventListener('click', function () { closeModal(false); });
+  $('#ccCancel').addEventListener('click', function () { closeModal(false); });
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(false);
+  });
+
+  /* ===== 트리거 버튼 연결 ===== */
+  const chargeBtn = document.getElementById('ccChargeBtn');
+  if (chargeBtn) chargeBtn.addEventListener('click', openModal);
+})();
+</script>
+
 </body>
 </html>
