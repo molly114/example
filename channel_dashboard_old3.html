@@ -336,25 +336,14 @@
     color: #065F46;
   }
 
-  /* 요금제 카드 — 상단 행 */
+  /* 요금제 카드 — 상단 행 / 월 한도 */
   .plan-head { display: flex; align-items: center; gap: 10px; }
   .plan-head .credit-label { margin-bottom: 0; }
+  .plan-limit-row { display: flex; align-items: baseline; gap: 10px; }
+  .plan-limit-cap {
+    font-size: 12px; font-weight: 600; color: var(--text-sub);
+  }
   .credit-card .progress { margin-top: 18px; }
-
-  /* 히어로 행 (잔여/초과 % + 사용금액) */
-  .plan-hero-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 18px; }
-  .plan-hero-pair { display: flex; align-items: baseline; gap: 4px; }
-  .plan-hero-label { font-size: 16px; font-weight: 600; }
-  .plan-hero-pct { font-size: 46px; font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
-  .plan-hero-sub { font-size: 12px; color: var(--text-sub); padding-bottom: 6px; }
-
-  /* 히어로 색상 — 카드 상태 연동 (~79% 초록 / 80~99% 주황 / 100%~ 빨강) */
-  .credit-card.normal .plan-hero-label,
-  .credit-card.normal .plan-hero-pct { color: var(--green); }
-  .credit-card.warn .plan-hero-label,
-  .credit-card.warn .plan-hero-pct { color: var(--orange); }
-  .credit-card.danger .plan-hero-label,
-  .credit-card.danger .plan-hero-pct { color: var(--red); }
 
   /* 요금제 뱃지 — 사용률 색상(주황/초록/빨강)과 구분되는 요금제 고유 색 */
   .plan-badge {
@@ -985,12 +974,12 @@
             <button class="btn-charge" id="ccChargeBtn">요금제 충전</button>
           </div>
 
-          <div class="plan-hero-row">
-            <div class="plan-hero-pair">
-              <span class="plan-hero-label" id="planHeroLabel">잔여</span>
-              <span class="plan-hero-pct" id="planHeroPct">11%</span>
-            </div>
-            <span class="plan-hero-sub" id="planHeroSub">222,500원 / 250,000원 사용</span>
+          <div class="plan-limit-row">
+            <span class="plan-limit-cap">월 한도</span>
+            <span class="credit-amount" id="planLimitAmt">250,000<span class="unit">원</span></span>
+          </div>
+          <div class="credit-used" id="planUsage">
+            이번 달 사용 <strong>222,500원 (89%)</strong> · 잔여 <strong>27,500원</strong>
           </div>
 
           <div class="progress">
@@ -1196,7 +1185,7 @@
 
     <!-- 1) 헤더 -->
     <div class="cc-header">
-      <span class="cc-title" id="ccTitleText">요금제 충전</span>
+      <span class="cc-title" id="ccTitleText">요금제 변경 · 충전</span>
       <button class="cc-close" id="ccClose" aria-label="닫기">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -1252,10 +1241,18 @@
         </div>
       </div>
 
-      <!-- 5) 결제 요약 / 분기 -->
+      <!-- 5) 임계값 미리보기 -->
       <div class="cc-block">
         <div class="cc-sec-label">
-          <span class="num">2</span> <span id="ccPayLabel">결제 요약</span>
+          <span class="num">2</span> 선택 요금제 임계값 미리보기
+        </div>
+        <div id="ccPreview"></div>
+      </div>
+
+      <!-- 6) 결제 요약 / 분기 -->
+      <div class="cc-block">
+        <div class="cc-sec-label">
+          <span class="num">3</span> <span id="ccPayLabel">결제 요약</span>
         </div>
         <div id="ccPayArea"></div>
       </div>
@@ -1292,9 +1289,9 @@
      ============================================================ */
   const PLANS = [
     { id: 1, name: '스타터',      target: '테스트·개인',  learners: '~50명',     courses: '~10개',  traffic: '~750 GB',    credit: 250000,   creditLabel: '25만원',     type: 'standard'    },
-    { id: 2, name: '베이직',        target: '소규모 강사',  learners: '~300명',    courses: '~30개',  traffic: '~4,500 GB',  credit: 1500000,  creditLabel: '150만원',    type: 'standard'    },
-    { id: 3, name: '스탠다드',        target: '중간 규모',    learners: '~1,000명',  courses: '~60개',  traffic: '~15,000 GB', credit: 5000000,  creditLabel: '500만원',    type: 'standard'    },
-    { id: 4, name: '프리미엄',        target: '대규모 채널',  learners: '~5,000명',  courses: '~150개', traffic: '~75,000 GB', credit: 25000000, creditLabel: '2,500만원',  type: 'standard'    },
+    { id: 2, name: '소형',        target: '소규모 강사',  learners: '~300명',    courses: '~30개',  traffic: '~4,500 GB',  credit: 1500000,  creditLabel: '150만원',    type: 'standard'    },
+    { id: 3, name: '중형',        target: '중간 규모',    learners: '~1,000명',  courses: '~60개',  traffic: '~15,000 GB', credit: 5000000,  creditLabel: '500만원',    type: 'standard'    },
+    { id: 4, name: '대형',        target: '대규모 채널',  learners: '~5,000명',  courses: '~150개', traffic: '~75,000 GB', credit: 25000000, creditLabel: '2,500만원',  type: 'standard'    },
     { id: 5, name: '엔터프라이즈', target: '대기업·기관',  learners: '10,000명+', courses: '300개+', traffic: '협의',        credit: null,     creditLabel: '협의',       type: 'negotiation' }
   ];
 
@@ -1340,13 +1337,14 @@
   /* 사용률 기준 카드 상태 (50 / 80 / 100% 경계 — 80%는 warn 구간) */
   function stateOf(rate) {
     if (rate >= 100) return 'danger';
-    if (rate >= 80)  return 'warn';
+    if (rate >= 50)  return 'warn';
     return 'normal';
   }
   function alertMsg(rate) {
     if (rate >= 120) return '120% 한도 초과 — 수강생 학습이 차단된 상태입니다. 즉시 요금제 상향이 필요합니다.';
     if (rate >= 100) return '100% 한도 초과 — 신규 수강 신청이 차단된 상태입니다. 즉시 요금제 상향이 필요합니다.';
     if (rate >= 80)  return '80% 임계값 도달 — 요금제 상향 또는 월 지출 한도 조정을 권장합니다. 100% 도달 시 신규 수강 신청이 차단됩니다.';
+    if (rate >= 50)  return '50% 임계값 도달 — 사용 추이를 확인하세요. 80% 도달 시 충전 권고 알림이 발송됩니다.';
     return '현재 사용 추이 기준 이번 달 한도 내 운영이 예상됩니다.';
   }
   /* 요금제 뱃지 채색 */
@@ -1388,36 +1386,35 @@
 
   /* ============================================================
      대시보드 요금제 카드 렌더
+     한도 = 현재 요금제 금액 / 사용률 = 사용액 ÷ 한도 / 잔여 = 한도 − 사용액
      ============================================================ */
   function renderCard() {
-    const plan   = getPlan(DASHBOARD.currentPlanId);
-    const limit  = planLimit(plan);
-    const used   = DASHBOARD.monthUsageKRW;
-    const rate   = limit > 0 ? Math.round(used / limit * 100) : 0;
-    const state  = stateOf(rate);
-    const isOver = rate >= 100;
+    const plan  = getPlan(DASHBOARD.currentPlanId);
+    const limit = planLimit(plan);
+    const used  = DASHBOARD.monthUsageKRW;
+    const rate  = limit > 0 ? Math.round(used / limit * 100) : 0;
+    const remain = limit - used;
+    const state = stateOf(rate);
 
-    /* 요금제 뱃지 */
+    /* 요금제 뱃지 (카드 안 + 상단 채널명 옆) */
     paintBadge(cardBadge, plan);
     paintBadge(headBadge, plan);
 
-    /* 히어로: 잔여/초과 % */
-    const heroLabel = document.getElementById('planHeroLabel');
-    const heroPct   = document.getElementById('planHeroPct');
-    const heroSub   = document.getElementById('planHeroSub');
-    if (heroLabel) heroLabel.textContent = isOver ? '초과' : '잔여';
-    if (heroPct)   heroPct.textContent   = (isOver ? rate - 100 : 100 - rate) + '%';
-    if (heroSub)   heroSub.textContent   =
-      used.toLocaleString('ko-KR') + '원 / ' + limit.toLocaleString('ko-KR') + '원 사용';
+    /* 월 한도 */
+    limitAmtEl.innerHTML = limit.toLocaleString('ko-KR') + '<span class="unit">원</span>';
+
+    /* 사용 현황 — 사용액(사용률) · 잔여액 모두 표기 */
+    usageEl.innerHTML =
+      '이번 달 사용 <strong>' + won(used) + ' (' + rate + '%)</strong> · 잔여 <strong>'
+      + won(Math.max(remain, 0)) + '</strong>';
 
     /* 진행바 */
-    fillEl.style.width = Math.min(rate, 100) + '%';
+    fillEl.style.width = Math.min(rate, 120) + '%';
 
-    /* 카드 상태 */
+    /* 상태 클래스 + 임계값 알림 */
     cardEl.classList.remove('normal', 'warn', 'danger');
     cardEl.classList.add(state);
 
-    /* 알림 */
     const svg = alertEl.querySelector('svg');
     alertEl.textContent = '';
     if (svg) alertEl.appendChild(svg);
@@ -1587,6 +1584,7 @@
     agreeEl.classList.remove('checked');
     dirty = true;
     renderTiers();
+    renderPreview();
     renderPayArea();
     updateFooter();
   }
@@ -1622,6 +1620,7 @@
     calcEl.classList.remove('open');
     renderSummary();
     renderTiers();
+    renderPreview();
     renderPayArea();
     updateFooter();
     overlay.classList.add('open');
